@@ -1,0 +1,11 @@
+Archer>Barbarian?
+Archer>>Musketeer
+barbarian>>valkyrie
+Lowest attack TTKs: Minion, skeleton, Wizard, Prince
+Highest defense TTKs: Giant, balloon, barbarian, Prince/knight/valkyrie
+Prince(5)>Valkyrie(4)>Knight(3	)
+Highest dps is prince and barbarian
+Absolute dps order:
+skeleton(close)>minion(range)>
+only prince can survive a wizard
+fix duplication for giants

@@ -1,6 +1,6 @@
 from teams.helper_function import Troops, Utils
 
-team_name = "BlueForce"
+team_name = "BlueForce2"
 troops = [
     Troops.giant,
     Troops.prince,
@@ -8,9 +8,13 @@ troops = [
     Troops.dragon,
     Troops.valkyrie,
     Troops.knight,
-    Troops.minion,
+    Troops.archer,
     Troops.skeleton
 ]
+splash_troops = [Troops.wizard, Troops.dragon, Troops.valkyrie]
+range_troops = [Troops.archer, Troops.wizard, Troops.dragon]
+air_troops = [Troops.dragon, Troops.minion]
+
 deploy_list = Troops([])
 team_signal = ""
 
@@ -23,13 +27,14 @@ def deploy(arena_data: dict):
     return deploy_list.list_, team_signal
 
 def logic(arena_data: dict):
-    print("check")
     global team_signal
     my_tower = arena_data["MyTower"]
     opp_tower = arena_data["OppTower"]
     my_troops = arena_data["MyTroops"]
     opp_troops = arena_data["OppTroops"]
 
+    #flag for opponent bulk troops
+    bulk_troops = {'skel':False, 'arch':False,'min':False, 'barb':False}
     elixir_available = my_tower.total_elixir
     deployable_troops = my_tower.deployable_troops
 
@@ -37,7 +42,7 @@ def logic(arena_data: dict):
     
     # ALWAYS deploy something if elixir is high - this is critical
     if elixir_available >= 9 and deployable_troops:
-        for cheap_troop in [Troops.skeleton, Troops.minion, Troops.knight]:
+        for cheap_troop in [Troops.skeleton, Troops.archer, Troops.knight]:
             if cheap_troop in deployable_troops:
                 deploy_list.list_.append((cheap_troop, (0, 0)))
                 return
@@ -66,6 +71,39 @@ def logic(arena_data: dict):
     if elixir_available >= 3 and deployable_troops:
         deploy_list.list_.append((deployable_troops[0], (0, 0)))
 
+def defensive_counter(enemy, deployable_troops, elixir_available,bulk_troops):
+    if 
+    pos=enemy.position
+    counter_deployed=False
+    bulk=False
+    if enemy.name=="Skeleton":
+        bulk_troops['skel']=True
+        bulk=True
+    elif enemy.name=="Archer":
+        bulk_troops['arch']=True
+        bulk=True
+    elif enemy.name=="Minion":
+        bulk_troops['min']=True
+        bulk=True
+    elif enemy.name=="Barbarian":
+        bulk_troops['barb']=True
+        bulk=True
+
+    if bulk==True:
+        #use a troop with splash damage
+        if Troops.wizard in deployable_troops and elixir_available >= 5:
+            #deploy wizard just out of range
+            deploy_list.list_.append((Troops.wizard, (pos[0] + Troops.wizard.attack_range, pos[1] )))
+            counter_deployed = True
+        elif Troops.dragon in deployable_troops and elixir_available >= 4:
+            deploy_list.list_.append((Troops.dragon, (pos[0] + Troops.dragon.attack_range, pos[1] )))
+            counter_deployed = True
+        elif Troops.valkyrie in deployable_troops and elixir_available >= 4 and enemy.type=="ground":
+            deploy_list.list_.append((Troops.valkyrie, (pos[0] , pos[1] )))
+            counter_deployed = True
+        else:        
+
+    
 def handle_enemy_threat(enemy, deployable_troops, elixir_available):
     """Simple counter system that always deploys something against threats"""
     pos = enemy.position
@@ -76,8 +114,8 @@ def handle_enemy_threat(enemy, deployable_troops, elixir_available):
         if Troops.wizard in deployable_troops and elixir_available >= 5:
             deploy_list.list_.append((Troops.wizard, (pos[0] * 0.8, pos[1] * 0.8)))
             counter_deployed = True
-        elif Troops.minion in deployable_troops and elixir_available >= 3:
-            deploy_list.list_.append((Troops.minion, (pos[0] * 0.8, pos[1] * 0.8)))
+        elif Troops.archer in deployable_troops and elixir_available >= 3:
+            deploy_list.list_.append((Troops.archer, (pos[0] * 0.8, pos[1] * 0.8)))
             counter_deployed = True
     
     # Tank threats (Giant)
@@ -121,8 +159,8 @@ def handle_offense(my_troops, deployable_troops, elixir_available):
         if Troops.wizard in deployable_troops and elixir_available >= 5:
             deploy_list.list_.append((Troops.wizard, (giant_pos[0] + 5, giant_pos[1])))
             return True
-        elif Troops.minion in deployable_troops and elixir_available >= 3:
-            deploy_list.list_.append((Troops.minion, (giant_pos[0] + 5, giant_pos[1])))
+        elif Troops.archer in deployable_troops and elixir_available >= 3:
+            deploy_list.list_.append((Troops.archer, (giant_pos[0] + 5, giant_pos[1])))
             return True
     
     # Support existing Princes
@@ -140,30 +178,26 @@ def handle_offense(my_troops, deployable_troops, elixir_available):
     
     # Start new offensive
     else:
-        # Determine side based on enemy density
-        left_density = sum(1 for t in my_troops if t.position[0] < 0)
-        right_density = sum(1 for t in my_troops if t.position[0] > 0)
-        target_side = -15 if left_density <= right_density else 15
-
         # Start Giant push
         if Troops.giant in deployable_troops and elixir_available >= 5:
-            deploy_list.list_.append((Troops.giant, (target_side, 0)))
+            deploy_list.list_.append((Troops.giant, (-20, 0)))
             return True
         # Start Prince push
         elif Troops.prince in deployable_troops and elixir_available >= 5:
-            deploy_list.list_.append((Troops.prince, (target_side, 0)))
+            deploy_list.list_.append((Troops.prince, (20, 0)))
             return True
         # Start cheaper offensive
         elif Troops.knight in deployable_troops and elixir_available >= 3:
             deploy_list.list_.append((Troops.knight, (0, 0)))
             return True
+    
     return False
 
 def get_active_troops(my_troops):
     """String describing what types of troops are on the field."""
     names = [t.name for t in my_troops]
     if "Giant" in names:
-        return "GW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "Minion"]) else "GW"
+        return "GW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "Archer"]) else "GW"
     if "Prince" in names:
-        return "PW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "Minion"]) else "PW"
+        return "PW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "Archer"]) else "PW"
     return "DF"

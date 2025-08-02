@@ -1,4 +1,6 @@
 __pycache__/
 .DS_Store
+teams/a.py
+teams/b.py
 data/coord.ipynb
 data/preprocess_images.py

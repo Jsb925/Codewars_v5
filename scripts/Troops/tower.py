@@ -31,6 +31,7 @@ class Tower:
         self.max_health = 7032
         self.damage = 158
         self.attack_range = 8 * size/5
+        print(self.attack_range)
         self.dummy = None
         self.dummy_original = None
         self.target = None

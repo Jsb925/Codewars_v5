@@ -1,16 +1,20 @@
 from teams.helper_function import Troops, Utils
 
 team_name = "BlueForce"
-troops = [
-    Troops.giant,
-    Troops.prince,
-    Troops.wizard, 
-    Troops.dragon,
-    Troops.valkyrie,
-    Troops.knight,
-    Troops.minion,
-    Troops.skeleton
-]
+# troops = [
+#     Troops.giant,
+#     Troops.prince,
+#     Troops.wizard, 
+#     Troops.dragon,
+#     Troops.valkyrie,
+#     Troops.knight,
+#     Troops.minion,
+#     Troops.skeleton
+# ]
+
+#bulk troops
+# troops=[Troops.skeleton,]# Troops.archer, Troops.minion, Troops.barbarian]
+troops=[Troops.valkyrie]
 deploy_list = Troops([])
 team_signal = ""
 
@@ -23,7 +27,6 @@ def deploy(arena_data: dict):
     return deploy_list.list_, team_signal
 
 def logic(arena_data: dict):
-    print("check")
     global team_signal
     my_tower = arena_data["MyTower"]
     opp_tower = arena_data["OppTower"]
@@ -35,36 +38,42 @@ def logic(arena_data: dict):
 
     team_signal = f"E{int(elixir_available)}|{get_active_troops(my_troops)}"
     
+    ld=None
     # ALWAYS deploy something if elixir is high - this is critical
     if elixir_available >= 9 and deployable_troops:
-        for cheap_troop in [Troops.skeleton, Troops.minion, Troops.knight]:
-            if cheap_troop in deployable_troops:
+        for cheap_troop in [ Troops.minion, Troops.barbarian,Troops.archer]:
+            if cheap_troop in deployable_troops and cheap_troop != ld:
                 deploy_list.list_.append((cheap_troop, (0, 0)))
+                ld=cheap_troop
                 return
         # If no cheap troops, deploy whatever we have
-        deploy_list.list_.append((deployable_troops[0], (0, 0)))
+        for i in deployable_troops:
+            if i != ld:
+                deploy_list.list_.append((i, (0, 0)))
+                ld=i
+                return
         return
 
     # 1. DEFENSIVE COUNTER - High priority
-    if opp_troops and elixir_available >= 3 and deployable_troops:
-        closest_enemy = min(
-            opp_troops,
-            key=lambda t: Utils.calculate_distance(my_tower.position, t.position, False)
-        )
+    # if opp_troops and elixir_available >= 3 and deployable_troops:
+    #     closest_enemy = min(
+    #         opp_troops,
+    #         key=lambda t: Utils.calculate_distance(my_tower.position, t.position, False)
+    #     )
         
-        # Try to counter enemy
-        if handle_enemy_threat(closest_enemy, deployable_troops, elixir_available):
-            return
+    #     # Try to counter enemy
+    #     if handle_enemy_threat(closest_enemy, deployable_troops, elixir_available):
+    #         return
 
-    # 2. OFFENSIVE STRATEGY - Giant or Prince pushes
-    if elixir_available >= 5 and deployable_troops:
-        # Try primary attack strategies
-        if handle_offense(my_troops, deployable_troops, elixir_available):
-            return
+    # # 2. OFFENSIVE STRATEGY - Giant or Prince pushes
+    # if elixir_available >= 5 and deployable_troops:
+    #     # Try primary attack strategies
+    #     if handle_offense(my_troops, deployable_troops, elixir_available):
+    #         return
     
-    # 3. GUARANTEED DEPLOYMENT - Always deploy something if we have elixir
-    if elixir_available >= 3 and deployable_troops:
-        deploy_list.list_.append((deployable_troops[0], (0, 0)))
+    # # 3. GUARANTEED DEPLOYMENT - Always deploy something if we have elixir
+    # if elixir_available >= 3 and deployable_troops:
+    #     deploy_list.list_.append((deployable_troops[0], (0, 0)))
 
 def handle_enemy_threat(enemy, deployable_troops, elixir_available):
     """Simple counter system that always deploys something against threats"""
@@ -140,30 +149,26 @@ def handle_offense(my_troops, deployable_troops, elixir_available):
     
     # Start new offensive
     else:
-        # Determine side based on enemy density
-        left_density = sum(1 for t in my_troops if t.position[0] < 0)
-        right_density = sum(1 for t in my_troops if t.position[0] > 0)
-        target_side = -15 if left_density <= right_density else 15
-
         # Start Giant push
         if Troops.giant in deployable_troops and elixir_available >= 5:
-            deploy_list.list_.append((Troops.giant, (target_side, 0)))
+            deploy_list.list_.append((Troops.giant, (-20, 0)))
             return True
         # Start Prince push
         elif Troops.prince in deployable_troops and elixir_available >= 5:
-            deploy_list.list_.append((Troops.prince, (target_side, 0)))
+            deploy_list.list_.append((Troops.prince, (20, 0)))
             return True
         # Start cheaper offensive
         elif Troops.knight in deployable_troops and elixir_available >= 3:
             deploy_list.list_.append((Troops.knight, (0, 0)))
             return True
+    
     return False
 
 def get_active_troops(my_troops):
     """String describing what types of troops are on the field."""
     names = [t.name for t in my_troops]
     if "Giant" in names:
-        return "GW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "Minion"]) else "GW"
+        return "GW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "minion"]) else "GW"
     if "Prince" in names:
-        return "PW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "Minion"]) else "PW"
+        return "PW+" if any(n in names for n in ["Wizard", "Valkyrie", "Dragon", "minion"]) else "PW"
     return "DF"
